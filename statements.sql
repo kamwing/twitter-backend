@@ -1,0 +1,194 @@
+/*
+    ioredis docs: https://github.com/luin/ioredis/blob/HEAD/API.md
+    design guide: https://www.geeksforgeeks.org/design-twitter-a-system-design-interview-question/
+    Redis timestamp sets: https://stackoverflow.com/questions/17153154/redis-data-structure-design-for-sorting-time-based-values
+
+    Follow:
+    - Save to PostgreSQL
+    - Add to Redis
+        - Add to user's following list (or fetch entire list if list not found)
+        - Add to followees followers list if exists
+        - Fetch follow user posts and add to home timeline
+
+    New post:
+    - Save to PostgreSQL
+    - Add to Redis
+        - Add post data
+        - Add post id to OP's profile and home timeline (calculate timeline if not found)
+        - Add post id to all followers' home timelines if they exist
+
+    Fetch timeline (home or profile):
+    - Get timeline from Redis (RECENT USER)
+    - Old user
+        - Calculate timeline and add to Redis
+        - Add following and follower lists to Redis
+    
+    Counting likes, reposts & comments
+    - On like/unlike.. etc add post id to queue for processing
+    - After x amount of ms, start new batch
+    - Once processed, add data to posts in Redis and PostgreSQL
+    
+    Search:
+    - Full text: https://www.postgresql.org/docs/9.5/textsearch.html
+
+    Logout: (OR DELETE COOKIE AND YOLO)
+    - Remove the token cookie
+    - Add token to Redis, into a blacklist set
+    - On every REST request check if token exists in blacklist set
+ 
+    Set Redis Objects:
+    - hset user:uid username|profileURL|smallProfileURL|backgroundURL|description|followers|following|hasHTimeline.. data
+    - hset user:usernameLower uid data
+        - sadd user:uid:followers FOLLOWER_UID
+        - sadd user:uid:likes postID
+        - sadd user:uid:reposts postID
+        - zadd user:uid:hometimeline postDate postID
+        - zadd user:uid:usertimeline postDate postID
+        - zadd user:uid:liketimeline postDate postID
+        - hset post pid:uid JSON_OBJECT
+
+    Get/Check Redis Objects:
+    - hget user:uid username|profileURL|smallProfileURL|backgroundURL|description|followers|following
+    - hget user:usernameLower uid
+        - smembers user:uid:[followers|following]
+        - sismember  user:uid:[likes|repost] postID
+        - hget post pid:uid
+        - zrevrangebyscore user:uid:[hometimeline|usertimeline|liketimeline] [+inf|maxDate] 0 10
+
+*/
+
+
+CREATE TABLE public.user (
+    email citext not null unique,
+    username varchar(32) not null unique,
+    username_lower varchar(32) not null unique,
+    password varchar(100) not null,
+    signup_date timestamptz not null,
+    profile_img varchar(74) not null,
+    small_profile_img varchar(74) not null,
+    background_img varchar(74) not null,
+    description varchar(250) not null,
+    uid serial primary key
+);
+
+CREATE TABLE public.post (
+    pid integer,
+    uid integer references public.user ON DELETE CASCADE,
+    message varchar(200) not null,
+    date timestamptz not null,
+    primary key (pid, uid)
+);
+
+CREATE TABLE public.user_following (
+    uid integer references public.user ON DELETE CASCADE,
+    fid integer references public.user ON DELETE CASCADE,
+    primary key (uid, fid)
+);
+
+/*Search*/
+SELECT pid, uid FROM public.post WHERE to_tsvector(message) @@ to_tsquery($1);
+
+CREATE TABLE public.post_stats (
+    pid integer,
+    uid integer,
+    likes integer not null,
+    reposts integer not null,
+    comments integer not null,
+    foreign key (pid, uid) references public.post,
+    primary key (pid, uid)
+);
+
+CREATE TABLE public.post_comment (
+    op_pid integer,
+    op_uid integer,
+    comment_pid integer,
+    comment_uid integer,
+    primary key (op_pid, op_uid, comment_pid, comment_uid),
+    foreign key (op_pid, op_uid) references public.post (pid, uid) ON DELETE CASCADE,
+    foreign key (comment_pid, comment_uid) references public.post (pid, uid) ON DELETE CASCADE
+);
+
+CREATE TABLE public.user_repost (
+    uid integer references public.user ON DELETE CASCADE,
+    post_pid integer,
+    post_uid integer,
+    date timestamptz not null,
+    primary key (uid, post_pid, post_uid),
+    foreign key (post_pid, post_uid) references public.post (pid, uid) ON DELETE CASCADE
+);
+
+CREATE TABLE public.user_like (
+    uid integer references public.user ON DELETE CASCADE,
+    post_pid integer,
+    post_uid integer,
+    date timestamptz not null,
+    primary key (uid, post_pid, post_uid),
+    foreign key (post_pid, post_uid) references public.post (pid, uid) ON DELETE CASCADE
+);
+
+SELECT count(public.user_like.uid) as likes, count(public.user_repost.uid) as reposts, 
+count(DISTINCT public.post_comment.comment_pid + public.post_comment.comment_uid) as comments 
+FROM public.user_like LEFT JOIN public.user_repost ON (public.user_repost.post_pid = $1 AND public.user_repost.post_uid = $2) 
+LEFT JOIN public.post_comment ON (public.post_comment.op_pid = $1 AND public.post_comment.op_uid = $2)
+WHERE public.user_like.post_pid = $1 AND public.user_like.post_uid = $2;
+
+/* New account and desc */
+INSERT INTO public.user values(EMAIL, USERNAME, LOWER(USERNAME), HASHED_PASSWORD, current_timestamp, PROFILE_URL, BG_URL, BIO);
+
+/* Get next PID for a given UID */
+SELECT coalesce(MAX(pid) + 1, 1) FROM public.post WHERE uid = UID;
+
+/* Create a new post */
+INSERT INTO public.post values(NEW_PID, UID, MESSAGE);
+
+/* Create a new comment */
+INSERT INTO public.post values(NEW_PID, UID, MESSAGE, current_timestamp);
+INSERT INTO public.post_comment values(OP_PID, OP_UID, NEW_PID, UID);
+
+/* Delete a post */
+DELETE FROM public.post WHERE pid = $1 AND uid = $2;
+
+/* Repost */
+INSERT INTO public.user_repost values(UID, POST_PID, POST_UID);
+
+/* Unrepost */
+DELETE FROM public.user_repost WHERE uid = $1 AND post_pid = $2 AND post_uid = $3;
+
+/* Like */
+INSERT INTO public.user_like values(UID, POST_PID, POST_UID);
+
+/* Unlike */
+DELETE FROM public.user_like WHERE uid = $1 AND post_pid = $2 AND post_uid = $3;
+
+/* Follow */
+INSERT INTO public.user_following values(UID, FID);
+
+/* Unfollow */
+DELETE FROM public.user_following WHERE uid = UID;
+
+/* Get following status: returns nothing if not following */
+SELECT public.user_following.fid FROM public.user_following 
+INNER JOIN public.user ON public.user.uid = public.user_following.fid 
+WHERE public.user_following.uid = $1 AND public.user.username_lower = LOWER($2);
+
+/* Get profile from username */
+SELECT username, profile_url, background_url, bio, count(public.user_following.fid) as follows 
+FROM public.user  
+INNER JOIN public.user_profile ON public.user.uid = public.user_profile.uid 
+LEFT JOIN public.user_following ON public.user.uid = public.user_following.fid 
+WHERE username_lower = LOWER($1) 
+GROUP BY public.user.uid, username, profile_url, background_url, bio;
+
+/* Get posts for user */
+SELECT public.post.pid, public.post.uid, public.post.message, public.post.date, public.user.username, public.user_profile.profile_url, 
+count(public.user_like.uid) as likes, count(public.user_repost.uid) as reposts, count(public.post_comment.op_pid) as comments
+FROM public.post 
+INNER JOIN public.user ON public.user.uid = public.post.uid
+INNER JOIN public.user_profile ON public.user.uid = public.user_profile.uid
+LEFT JOIN public.user_like ON public.user_like.post_pid = public.post.pid AND public.user_like.post_uid = public.post.uid
+LEFT JOIN public.user_repost ON public.user_repost.post_pid = public.post.pid AND public.user_repost.post_uid = public.post.uid
+LEFT JOIN public.post_comment ON public.post_comment.op_pid = public.post.pid AND public.post_comment.op_uid = public.post.uid
+WHERE public.user.username_lower = LOWER($1) /* AND PUBLIC.post.date < $2 for loading more posts after x date*/
+GROUP BY public.post.pid, public.post.uid, public.post.message, public.post.date, public.user.username, public.user_profile.profile_url
+ORDER BY public.post.date DESC
+LIMIT 10;

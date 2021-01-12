@@ -1,42 +1,25 @@
+/** Configure environment variables */
 import dotenv from 'dotenv';
 dotenv.config();
 
-import Server from './server';
+/** Configure timezone */
+process.env.TZ = 'Pacific/Auckland';
 
+import Server from './Server';
+
+/** Start express and the HTTP server. */
 const server = new Server();
-server.start(3000).then(() => console.log("server started on port 3000"));
+server.start(3000).then(() =>{
+    console.log('Server started on port 3000');
+});
 
-/* 
- * routes: link controller functions to url routes
- * controllers: logic for each route
- * models: database management
- * 
- * database: https://medium.com/nsoft/building-and-running-nodejs-typescript-postgresql-application-with-docker-3878240a2f73
- * postgresql commands: https://www.digitalocean.com/community/tutorials/how-to-install-and-use-postgresql-on-ubuntu-16-04
- * 
- * jwt: https://medium.com/javascript-in-plain-english/verifying-json-web-tokens-with-express-jwt-1ae147aa9bd3
- * 
- * Routes: 
- * /api/auth/login
- * /api/auth/register
- * /api/auth/logout
- * 
- * /api/profile
- * /api/profile/follow
- * /api/profile/posts
- * /api/profile/liked-posts
- * /api/profile/media-posts
- * 
- * /api/post/view
- * /api/post/replies
- * /api/post/like
- * /api/post/repost
- * 
- * /api/search/popular
- * /api/search/latest
- * /api/search/media
- * 
- * /api/timeline
- * 
- * /api/create-post
- */
+export default server;
+
+// testing express
+// https://github.com/visionmedia/supertest
+// proper testing structure/practices
+// https://stackoverflow.com/questions/24153261/joining-tests-from-multiple-files-with-mocha-js
+// validate request params
+// https://express-validator.github.io/docs/check-api.html
+// great error handling guide
+// https://zellwk.com/blog/express-errors/#:~:text=If%20you%20want%20to%20handle%20an%20asynchronous%20error%2C%20you%20need,handler%20through%20the%20next%20argument.&text=If%20you're%20using%20Async,code%20without%20try%2Fcatch%20blocks.
