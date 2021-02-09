@@ -76,7 +76,7 @@ export default class Server {
      * Configures image directory and connects the routes from each module.
      */
     private routes() {
-        this.app.use('/img', express.static(path.join(__dirname, '../public/img'), {
+        this.app.use('/api/img', express.static(path.join(__dirname, '../public/img'), {
             maxAge: maxImageCacheAge
         }));
         this.app.use('/api/auth', AuthRoutes);
