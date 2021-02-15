@@ -19,7 +19,7 @@ dayjs.extend(relativeTime)
 const postLimit = 10;
 
 /** Base image path. */
-const imagePath = 'http://localhost:3000/api/img/';
+const imagePath = 'https://social.gabe.nz/api/img/';
 
 /**
  * Converts a date into a clean 'time ago' string.
