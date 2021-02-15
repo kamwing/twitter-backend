@@ -9,11 +9,11 @@ Since this Twitter clone is read heavy, I have focused on caching timelines, pos
 
 ### Requesting timelines
 
-<img src="https://i.imgur.com/CilXVbf.png" alt="Image of requesting a timeline" height="650">
+<img src="https://i.imgur.com/CilXVbf.png" alt="Image of requesting a timeline" height="651px">
 
 ### Creating a new post
 
-<img src="https://i.imgur.com/XAfdEMf.png" alt="Image of creating a post" height="350">
+<img src="https://i.imgur.com/XAfdEMf.png" alt="Image of creating a post" height="350px">
 
 ### Liking a post
 
