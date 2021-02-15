@@ -9,7 +9,7 @@ Since this Twitter clone is read heavy, I have focused on caching timelines, pos
 
 ### Requesting timelines
 
-<img src="https://i.imgur.com/CilXVbf.png" alt="Image of requesting a timeline" height="651px">
+<img src="https://i.imgur.com/TMhHBoO.png" alt="Image of requesting a timeline" width="420px">
 
 ### Creating a new post
 
