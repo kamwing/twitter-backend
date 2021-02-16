@@ -193,6 +193,15 @@ const getProfile = async (uid: number, viewerUID: number): Promise<IProfile> => 
 }
 
 /**
+ * Get a user's small profile image.
+ * 
+ * @param uid User ID of the profile image being requested.
+ */
+const getSmallProfileImage = async (uid: number): Promise<string> => {
+    return imagePath + (await redis.hget('user:' + uid, "smallProfileURL") as string);
+}
+
+/**
  * Get a user timeline's post IDs.
  * Assumes that the user of the profile has already had a cache check.
  * Generates a new user timeline if theres not one already in the cache.
@@ -315,4 +324,4 @@ const getSearchTimeline = async (keywords: string, viewerUID: number, lastDate?:
     return fetchPostsFromID(postIDs, viewerUID);
 }
 
-export = { cacheCheck, refreshProfileCache, getProfile, getUserTimeline, getLikeTimeline, getHomeTimeline, getCommentTimeline, getSearchTimeline, getUIDFromUsername };
+export = { cacheCheck, getSmallProfileImage, refreshProfileCache, getProfile, getUserTimeline, getLikeTimeline, getHomeTimeline, getCommentTimeline, getSearchTimeline, getUIDFromUsername };

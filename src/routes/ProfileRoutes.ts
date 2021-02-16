@@ -33,6 +33,11 @@ router.post('/update', upload.fields([
 ]), ProfileController.update);
 
 /**
+ * Links a request for a small version of a user's profile image. 
+ */
+router.get("/small", ProfileController.getNavProfileImage);
+
+/**
  * Links a request for a user's posts.
  */
 router.get('/posts', check('username').notEmpty().withMessage('Invalid username'), ProfileController.getPosts);

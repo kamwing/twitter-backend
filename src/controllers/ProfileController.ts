@@ -24,6 +24,15 @@ export = {
         res.send(profile);
     },
     /**
+     * Handles requests for user profile images.
+     */
+    getNavProfileImage: async (req: AuthRequest, res: Response): Promise<void> => {
+        await UserCache.cacheCheck(req.user!.uid);
+        res.send({
+            smallProfileURL: await UserCache.getSmallProfileImage(req.user!.uid)
+        });
+    },
+    /**
      * Handles requests for user timelines.
      */
     getPosts: async (req: AuthRequest, res: Response): Promise<void> => {
