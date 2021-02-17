@@ -227,7 +227,7 @@ export = {
      */
     searchLatest: async (keywords: string, lastDate: string): Promise<IPostID[]> => {
         const client = await pool.connect();
-        const SQL = 'SELECT pid, uid FROM public.post WHERE to_tsvector(message) @@ to_tsquery($1) AND date < $2;';
+        const SQL = 'SELECT pid, uid FROM public.post WHERE to_tsvector(message) @@ plainto_tsquery(\'english\', $1) AND date < $2;';
 
         const { rows } = await client.query(SQL, [keywords, lastDate]);
 
