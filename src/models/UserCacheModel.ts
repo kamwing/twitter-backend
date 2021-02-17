@@ -332,6 +332,8 @@ const getSearchTimeline = async (keywords: string, viewerUID: number, lastDate?:
     const maxDate = String(lastDate ? lastDate.toISOString() : new Date().toISOString());
     const postIDs = await PostModel.searchLatest(keywords, maxDate);
     
+    if (postIDs.length == 0) return [];
+
     try {
         return fetchPostsFromID(postIDs, viewerUID);
     } catch (err) {
