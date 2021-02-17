@@ -332,7 +332,11 @@ const getSearchTimeline = async (keywords: string, viewerUID: number, lastDate?:
     const maxDate = String(lastDate ? lastDate.toISOString() : new Date().toISOString());
     const postIDs = await PostModel.searchLatest(keywords, maxDate);
     
-    return fetchPostsFromID(postIDs, viewerUID);
+    try {
+        return fetchPostsFromID(postIDs, viewerUID);
+    } catch (err) {
+        return Promise.reject(err);
+    }
 }
 
 export = { cacheCheck, getSmallProfileImage, refreshProfileCache, getProfile, getUserTimeline, getLikeTimeline, getHomeTimeline, getCommentTimeline, getSearchTimeline, getUIDFromUsername };
