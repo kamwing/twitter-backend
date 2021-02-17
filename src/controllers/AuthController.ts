@@ -6,9 +6,9 @@ import createError from 'http-errors';
 import UserCache from '../models/UserCacheModel';
 import { generateToken } from '../middleware/jwtManager';
 
-const defaultBackgroundURL = 'https://picsum.photos/1024/200';
-const defaultSmallProfileURL = 'https://picsum.photos/50/50';
-const defaultProfileURL = 'https://picsum.photos/100/100';
+const defaultBackgroundURL = 'default-background.png';
+const defaultProfileURL = 'default-profile-small.png';
+const defaultSmallProfileURL = 'default-profile.png';
 const defaultBio = 'Hello, I am new to Twitter.';
 
 export = {
