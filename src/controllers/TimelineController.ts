@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { NextFunction, Response } from 'express';
 import { validationResult } from 'express-validator';
 import createError from 'http-errors';
 import { AuthRequest } from '../middleware/jwtManager';
@@ -20,10 +20,10 @@ export = {
      * Handles search timeline requests.
      * Does a cacheCheck on user and fetches timeline from PostgreSQL via full-text search. 
      */
-    getSearchTimeline: async (req: AuthRequest, res: Response): Promise<void> => {
+    getSearchTimeline: async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            throw createError(400, errors.array()[0].msg);
+            return next(createError(400, errors.array()[0].msg));
         }
 
         const lastDate = req.query.lastDate ? new Date(req.query.lastDate as string) : undefined;

@@ -56,7 +56,7 @@ export = {
         const { rows } = await client.query(SQL, [email]);
         client.release();
 
-        if (rows.length == 0) throw createError(401, 'Invalid email or password');
+        if (rows.length == 0) return Promise.reject(createError(401, 'Invalid email or password'));
 
         return rows[0];
     },
@@ -71,7 +71,7 @@ export = {
         const { rows } = await client.query(SQL, [email]);
         client.release();
 
-        if (rows.length == 0) throw createError(401, 'Invalid email or password');
+        if (rows.length == 0) return Promise.reject(createError(401, 'Invalid email or password'));
 
         return rows[0].password;
     }

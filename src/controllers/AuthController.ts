@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import AuthModel from '../models/AuthModel';
 import { validationResult } from 'express-validator';
@@ -17,17 +17,17 @@ export = {
      * and compares the correct hash with the given password. If successfull,
      * it generates a jwt token and feeds it into a cookie.
      */
-    login: async (req: Request, res: Response): Promise<void> => {
+    login: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            throw createError(400, errors.array()[0].msg);
+            next(createError(400, errors.array()[0].msg));
         }
 
         const hash = await AuthModel.getHashedPassword(req.body.email);
         const validHash = await bcrypt.compare(req.body.password, hash);
         
         if (!validHash) {
-            throw createError(401, 'Invalid email or password');
+            return next(createError(401, 'Invalid email or password'));
         }
 
         const { uid, username } = await AuthModel.getIdentifiersFromEmail(req.body.email);
@@ -45,19 +45,19 @@ export = {
      * is available first. Then creating a hash from the given password and 
      * finally making a request to PostgreSQL.
      */
-    register: async (req: Request, res: Response): Promise<void> => {
+    register: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            throw createError(400, errors.array());
+            return next(createError(400, errors.array()[0].msg));
         }
 
         const emailAvailable = await AuthModel.isEmailAvailable(req.body.email);
         if (!emailAvailable) {
-            throw createError(409, 'Email already registered');
+            return next(createError(409, 'Email already registered'));
         }
         const usernameAvailable = await AuthModel.isUsernameAvailable(req.body.username);
         if (!usernameAvailable) {
-            throw createError(409, 'Username already taken');
+            return next(createError(409, 'Username already taken'));
         }
 
         const hash = await bcrypt.hash(req.body.password, 10);

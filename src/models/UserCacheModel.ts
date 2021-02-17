@@ -9,6 +9,7 @@ import {
 } from '../utils/interfaces';
 import UserModel from './UserModel';
 import dayjs from 'dayjs';
+import createError from 'http-errors';
 import relativeTime from 'dayjs/plugin/relativeTime'
 import PostModel from './PostModel';
 
@@ -83,6 +84,10 @@ const fetchPostsFromID = async (postIDs: IPostID[], viewerUID: number): Promise<
     // Fetch post data and refresh connected cold users 
     const coldPostIDs = await fetchCorePosts(postIDs, true);
     await fetchCorePosts(coldPostIDs);
+
+    if (corePosts.length == 0) {
+        return Promise.reject(createError(404, "Invalid post ID."));
+    }
 
     // Fetch post metadata
     for (const corePost of corePosts) {
@@ -293,21 +298,27 @@ const getHomeTimeline = async (uid: number, lastDate?: Date): Promise<IPost[]> =
  * @param lastDate Oldest date that a returned post can be.
  */
 const getCommentTimeline = async (post: IPostID, viewerUID: number, lastDate?: Date): Promise<{ op?: IPost, comments: IPost[] }> => {
-    const maxScore = String(lastDate ? lastDate.getTime() : new Date().getTime());
-    const rawIDS = await redis.zrevrangebyscore('post:' + post.pid + ':' + post.uid + ':comments', maxScore, '-inf', 'LIMIT', 0, postLimit);
-    
-    const postIDs: IPostID[] = [];
-    rawIDS.forEach((rawID) => postIDs.push(JSON.parse(rawID)));
-    
-    const comments = await fetchPostsFromID(postIDs, viewerUID);
+    try {
+        const originalPost = (await fetchPostsFromID([post], viewerUID))[0];
 
-    if (lastDate) {
-        return { comments };
-    }
-    
-    return {
-        op: (await fetchPostsFromID([post], viewerUID))[0],
-        comments
+        const maxScore = String(lastDate ? lastDate.getTime() : new Date().getTime());
+        const rawIDS = await redis.zrevrangebyscore('post:' + post.pid + ':' + post.uid + ':comments', maxScore, '-inf', 'LIMIT', 0, postLimit);
+        
+        const postIDs: IPostID[] = [];
+        rawIDS.forEach((rawID) => postIDs.push(JSON.parse(rawID)));
+        
+        const comments = await fetchPostsFromID(postIDs, viewerUID);
+
+        if (lastDate) {
+            return { comments };
+        }
+        
+        return {
+            op: originalPost,
+            comments
+        }
+    } catch (err) {
+        return Promise.reject(err);
     }
 }
 

@@ -22,7 +22,7 @@ export = {
         const { rows } = await client.query(SQL, [username]);
 
         if (rows.length == 0) {
-            throw createError(404, 'Invalid username');
+            return Promise.reject(createError(404, 'Invalid username'));
         }
 
         return rows[0].uid;

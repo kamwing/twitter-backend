@@ -11,17 +11,21 @@ export = {
     /**
      * Handles core profile data requests. (Profile image, background image, username and description)
      */
-    getProfile: async (req: AuthRequest, res: Response): Promise<void> => {
+    getProfile: async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            throw createError(400, errors.array()[0].msg);
+            return next(createError(400, errors.array()[0].msg));
         }
-
-        const uid = await UserCache.getUIDFromUsername(req.query.username as string);
-        await UserCache.cacheCheck(uid);
-        const profile = await UserCache.getProfile(uid, req.user!.uid);
         
-        res.send(profile);
+        try {
+            const uid = await UserCache.getUIDFromUsername(req.query.username as string);
+            await UserCache.cacheCheck(uid);
+            const profile = await UserCache.getProfile(uid, req.user!.uid);
+        
+            res.send(profile);
+        } catch (err) {
+            next(err);
+        }
     },
     /**
      * Handles requests for user profile images.
@@ -35,66 +39,82 @@ export = {
     /**
      * Handles requests for user timelines.
      */
-    getPosts: async (req: AuthRequest, res: Response): Promise<void> => {
+    getPosts: async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            throw createError(400, errors.array()[0].msg);
+            return next(createError(400, errors.array()[0].msg));
         }
 
-        const lastDate = req.query.lastDate ? new Date(req.query.lastDate as string) : undefined;
+        try {
+            const lastDate = req.query.lastDate ? new Date(req.query.lastDate as string) : undefined;
 
-        const uid = await UserCache.getUIDFromUsername(req.query.username as string);
-        await UserCache.cacheCheck(uid);
-        const posts = await UserCache.getUserTimeline(uid, req.user!.uid, lastDate);
-        
-        res.send(posts);
+            const uid = await UserCache.getUIDFromUsername(req.query.username as string);
+            await UserCache.cacheCheck(uid);
+            const posts = await UserCache.getUserTimeline(uid, req.user!.uid, lastDate);
+            
+            res.send(posts);
+        } catch (err) {
+            next(err);
+        }
     },
     /**
      * Handles requests for like timelines.
      */
-    getLikedPosts: async (req: AuthRequest, res: Response): Promise<void> => {
+    getLikedPosts: async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            throw createError(400, errors.array()[0].msg);
+            return next(createError(400, errors.array()[0].msg));
         }
 
-        const lastDate = req.query.lastDate ? new Date(req.query.lastDate as string) : undefined;
+        try {
+            const lastDate = req.query.lastDate ? new Date(req.query.lastDate as string) : undefined;
 
-        const uid = await UserCache.getUIDFromUsername(req.query.username as string);
-        await UserCache.cacheCheck(uid);
-        const posts = await UserCache.getLikeTimeline(uid, req.user!.uid, lastDate);
-        
-        res.send(posts);
+            const uid = await UserCache.getUIDFromUsername(req.query.username as string);
+            await UserCache.cacheCheck(uid);
+            const posts = await UserCache.getLikeTimeline(uid, req.user!.uid, lastDate);
+            
+            res.send(posts);
+        } catch (err) {
+            next(err);
+        }
     },
     /**
      * Handles requests for following another user.
      */
-    follow: async (req: AuthRequest, res: Response): Promise<void> => {
+    follow: async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            throw createError(400, errors.array()[0].msg);
+            return next(createError(400, errors.array()[0].msg));
         }
 
-        const uid = await UserCache.getUIDFromUsername(req.query.username as string);
-        await UserCache.cacheCheck(uid);
-        await UserModel.follow(req.user!.uid, uid);
+        try {
+            const uid = await UserCache.getUIDFromUsername(req.query.username as string);
+            await UserCache.cacheCheck(uid);
+            await UserModel.follow(req.user!.uid, uid);
 
-        res.sendStatus(200);
+            res.sendStatus(200);
+        } catch (err) {
+            next(err);
+        }
     },
     /**
      * Handles requests for unfollowing another user.
      */
-    unfollow: async (req: AuthRequest, res: Response): Promise<void> => {
+    unfollow: async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            throw createError(400, errors.array()[0].msg);
+            return next(createError(400, errors.array()[0].msg));
         }
         
-        const uid = await UserCache.getUIDFromUsername(req.query.username as string);
-        await UserCache.cacheCheck(uid);
-        await UserModel.unfollow(req.user!.uid, uid);
+        try {
+            const uid = await UserCache.getUIDFromUsername(req.query.username as string);
+            await UserCache.cacheCheck(uid);
+            await UserModel.unfollow(req.user!.uid, uid);
 
-        res.sendStatus(200);
+            res.sendStatus(200);
+        } catch (err) {
+            next(err);
+        }
     },
     /**
      * Handles requests for updating a user's profile.
