@@ -21,7 +21,7 @@ Since this Twitter clone is read heavy, I have focused on caching timelines, pos
 
 ## Endpoints
 
-### Authorizing Requests
+### Authorizing requests
 Every request must have a header with the format 'Authorization: Bearer JWT_TOKEN_FROM_COOKIE', except for login or register requests.
 
 ### POST /api/auth/login
@@ -74,18 +74,18 @@ Gets all the contents of a post and a few comments.
     "comments":
     [
         {
-               "pid":51,
+            "pid":51,
             "uid":1,
-               "username":"Gabe",
-             "profileURL":"https://social.gabe.nz/api/img/1-profile-small.png",
+            "username":"Gabe",
+            "profileURL":"https://social.gabe.nz/api/img/1-profile-small.png",
             "date":"Jan 12",
             "message":"testing",
-             "likes":"0",
+            "likes":"0",
             "reposts":"0",
             "comments":"2",
             "hasLiked":false,
             "hasReposted":false,
-              "rawDate":"2021-01-12T02:47:10.166Z"}
+            "rawDate":"2021-01-12T02:47:10.166Z"}
       ]
 }
 ```
