@@ -7,8 +7,8 @@ import UserCache from '../models/UserCacheModel';
 import { generateToken } from '../middleware/jwtManager';
 
 const defaultBackgroundURL = 'default-background.png';
-const defaultProfileURL = 'default-profile-small.png';
-const defaultSmallProfileURL = 'default-profile.png';
+const defaultSmallProfileURL = 'default-profile-small.png';
+const defaultProfileURL = 'default-profile.png';
 const defaultBio = 'Hello, I am new to Twitter.';
 
 export = {
