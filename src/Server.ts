@@ -49,7 +49,7 @@ export default class Server {
         this.app.use(cookieParser());
         
         this.app.all('/*', (req, res, next) => {
-            res.header('Access-Control-Allow-Origin', 'https://social.gabe.nz'); // host of web server for react site
+            res.header('Access-Control-Allow-Origin', 'http://localhost:3001'); // host of web server for react site
             res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
             res.header('Access-Control-Allow-Methods: GET, POST, PATCH, PUT, DELETE, OPTIONS');
             res.header('Access-Control-Allow-Credentials', 'true');

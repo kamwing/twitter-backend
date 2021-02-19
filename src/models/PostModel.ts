@@ -1,6 +1,7 @@
 import { pool } from '../database/postgres';
 import redis from '../database/redis';
 import { ICorePost, IPostID, IPostStats } from '../utils/interfaces';
+import UserModel from './UserModel';
 
 /**
  * Updates redis when a new post has been added, by updating OP's user timeline, 
@@ -16,8 +17,9 @@ const addCachePost = async (post: ICorePost, replyTo?: IPostID, replyDate?: stri
 
     const postID = {
         pid: post.pid,
-        uid: post.uid
-    };
+        uid: post.uid,
+        repostUsername: post.repostUsername
+    }; 
 
     const tx = redis.multi();
     // Add postID to every followers home timeline
@@ -28,19 +30,20 @@ const addCachePost = async (post: ICorePost, replyTo?: IPostID, replyDate?: stri
         }
     }
 
-    // Add post to cache
-    tx.hset('post', post.pid + ':' + post.uid, JSON.stringify(post));
-
     // Add postID to OP's user timeline
     const userTimeline = await redis.hget('user:' + post.uid, 'usertimeline');
     if (userTimeline) {
         tx.zadd('user:' + post.uid + ':usertimeline', new Date(post.date).getTime().toString(), JSON.stringify(postID));
     }
 
-    // If comment, add identifier
-    if (replyTo && replyDate) {
-        tx.zadd('post:' + replyTo.pid + ':' + replyTo.uid + ':comments', replyDate, JSON.stringify(postID));
+    // Add post to cache
+    if (!post.repostUsername) {
+        tx.hset('post', post.pid + ':' + post.uid, JSON.stringify(post));
+        // If comment, add identifier
+        if (replyTo && replyDate) {
+            tx.zadd('post:' + replyTo.pid + ':' + replyTo.uid + ':comments', replyDate, JSON.stringify(postID));
 
+        }
     }
 
     await tx.exec();
@@ -59,7 +62,9 @@ const deleteCachePost = async (postID: IPostID): Promise<void> => {
         tx.zrem('user:' + follower + ':hometimeline', JSON.stringify(postID));
     }
     tx.zrem('user:' + postID.uid + ':usertimeline', JSON.stringify(postID));
-    tx.hdel('post', postID.pid + ':' + postID.uid);
+    
+    if (!postID.repostUsername) tx.hdel('post', postID.pid + ':' + postID.uid);
+    
     await tx.exec();
 }
 
@@ -76,11 +81,11 @@ export = {
         const date = new Date();
 
         const { rows } = await client.query(PID_SQL, [uid]);
-        const pid = rows[0].coalesce;
+        const pid = parseInt(rows[0].coalesce);
 
         await client.query(SQL, [pid, uid, message, date.toISOString()]);
         
-        await addCachePost({ pid: parseInt(pid), uid, message, date: date.getTime().toString() });
+        await addCachePost({ pid, uid, message, date: date.toISOString() });
 
         client.release();
     },
@@ -175,12 +180,21 @@ export = {
     repost: async (uid: number, postID: IPostID): Promise<void> => {
         const client = await pool.connect();
         const SQL = 'INSERT INTO public.user_repost values($1, $2, $3, now());';
-        
+        const date = new Date();
+
         await client.query(SQL, [uid, postID.pid, postID.uid]);
         client.release();
 
         await redis.sadd('user:' + uid + ':reposts', JSON.stringify(postID));
         await redis.sadd('batch:post', JSON.stringify(postID));
+
+        await addCachePost({ 
+            pid: postID.pid, 
+            uid: postID.uid, 
+            message: "", 
+            date: date.toISOString(), 
+            repostUsername: await UserModel.getUsernameFromUID(uid) 
+        });
     },
     /**
      * Unreposts a post and adds it to batch processing.
@@ -195,6 +209,11 @@ export = {
         client.release();
 
         await redis.srem('user:' + uid + ':reposts', JSON.stringify(postID));
+
+        const newPostID = postID;
+        newPostID.repostUsername = await UserModel.getUsernameFromUID(uid);
+        deleteCachePost(newPostID);
+
         await redis.sadd('batch:post', JSON.stringify(postID));
     },
     /**
@@ -227,7 +246,7 @@ export = {
      */
     searchLatest: async (keywords: string, lastDate: string): Promise<IPostID[]> => {
         const client = await pool.connect();
-        const SQL = 'SELECT pid, uid FROM public.post WHERE to_tsvector(message) @@ plainto_tsquery(\'english\', $1) AND date < $2;';
+        const SQL = 'SELECT pid, uid FROM public.post WHERE to_tsvector(message) @@ plainto_tsquery(\'english\', $1) AND date < $2 LIMIT 10;';
 
         const { rows } = await client.query(SQL, [keywords, lastDate]);
 

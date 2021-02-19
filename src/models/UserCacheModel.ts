@@ -72,7 +72,9 @@ const fetchPostsFromID = async (postIDs: IPostID[], viewerUID: number): Promise<
         for (const postID of postIDs) {
             const rawJSON = await redis.hget('post', postID.pid + ':' + postID.uid);
             if (rawJSON) {
-                corePosts.push(JSON.parse(rawJSON));
+                const newPost = JSON.parse(rawJSON);
+                if (postID.repostUsername) newPost.repostUsername = postID.repostUsername;
+                corePosts.push(newPost);
             } else if (doCacheCheck) {
                 await cacheCheck(postID.uid);
                 coldPostIDs.push(postID);
@@ -111,14 +113,15 @@ const fetchPostsFromID = async (postIDs: IPostID[], viewerUID: number): Promise<
             hasLiked: Boolean(await redis.zscore('user:' + viewerUID + ':likes', JSON.stringify(postID))),
             hasReposted: Boolean(await redis.sismember('user:' + viewerUID + ':reposts', JSON.stringify(postID))),
             rawDate: corePost.date,
+            repostUsername: corePost.repostUsername
         });
     }
 
-    // Sorts posts from new to old.
-    fullPosts.sort((a, b) => {
-        if (a.rawDate! > b.rawDate!) return -1;
-        return 1;
-    });
+    // // Sorts posts from new to old.
+    // fullPosts.sort((a, b) => {
+    //     if (a.rawDate! > b.rawDate!) return -1;
+    //     return 1;
+    // });
     return fullPosts;
 }
 
