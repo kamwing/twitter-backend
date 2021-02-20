@@ -37,6 +37,10 @@ export = {
 
         const { rows } = await client.query(SQL, [uid]);
 
+        if (rows.length == 0) {
+            return Promise.reject(createError(404, "Invalid user ID."));
+        }
+
         return rows[0].username;
     },
     /**
@@ -49,6 +53,10 @@ export = {
 
         const { rows } = await client.query(SQL, [uid]);
         client.release();
+
+        if (rows.length == 0) {
+            return Promise.reject(createError(404, "Invalid user ID."));
+        }
 
         return {
             username: rows[0].username,
@@ -127,6 +135,8 @@ export = {
         await client.query(SQL, [uid, fid]);
 
         redis.sadd('user:' + fid + ':followers', uid);
+
+        redis.sadd('batch:user', fid);
     },
     /**
      * Updates a user's following list.
@@ -140,6 +150,8 @@ export = {
         await client.query(SQL, [uid, fid]);
 
         redis.srem('user:' + fid + ':followers', uid);
+
+        redis.sadd('batch:user', fid);
     },
     /**
      * Get all the core data of every post from a user.
@@ -232,5 +244,18 @@ export = {
         }));
 
         return res;
+    },
+    /**
+     * Calculates a user's follower count.
+     * 
+     * @param uid ID of the user in question.
+     */
+    caculateFollowers: async (uid: number): Promise<number> => {
+        const client = await pool.connect();
+        const SQL = 'SELECT count(uid) as followers FROM public.user_following WHERE fid = $1;';
+
+        const { rows } = await client.query(SQL, [uid]);
+
+        return rows[0].followers;
     }
 }
