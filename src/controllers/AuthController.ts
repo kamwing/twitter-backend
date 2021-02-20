@@ -23,22 +23,26 @@ export = {
             next(createError(400, errors.array()[0].msg));
         }
 
-        const hash = await AuthModel.getHashedPassword(req.body.email);
-        const validHash = await bcrypt.compare(req.body.password, hash);
-        
-        if (!validHash) {
+        try {
+            const hash = await AuthModel.getHashedPassword(req.body.email);
+            const validHash = await bcrypt.compare(req.body.password, hash);
+            
+            if (!validHash) {
+                return next(createError(401, 'Invalid email or password'));
+            }
+
+            const { uid, username } = await AuthModel.getIdentifiersFromEmail(req.body.email);
+            const maxAge = 1000 * 60 * 60 * 24 * 7;
+            
+            res.cookie('jwtToken', generateToken(uid), { maxAge });
+            res.cookie('username', username, { maxAge });
+            
+            await UserCache.cacheCheck(uid);
+
+            res.sendStatus(200);
+        } catch (e) {
             return next(createError(401, 'Invalid email or password'));
         }
-
-        const { uid, username } = await AuthModel.getIdentifiersFromEmail(req.body.email);
-        const maxAge = 1000 * 60 * 60 * 24 * 7;
-        
-        res.cookie('jwtToken', generateToken(uid), { maxAge });
-        res.cookie('username', username, { maxAge });
-        
-        await UserCache.cacheCheck(uid);
-
-        res.sendStatus(200);
     },
     /**
      * Processes a register request, by checking if the email and username 
