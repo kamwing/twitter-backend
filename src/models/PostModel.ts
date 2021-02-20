@@ -6,14 +6,15 @@ import UserModel from './UserModel';
 /**
  * Updates redis when a new post has been added, by updating OP's user timeline, 
  * adding the post ID to all OP's followers timelines and adding the post itself.
+ * @param uid The user that has created/reposted the given post.
  * @param post Post ID, message and date.
  * @param replyTo If the new post is a comment, this is the ID of the post being replied to.
  * @param replyDate If the new post is a comment, this is the date of comment.
  */
-const addCachePost = async (post: ICorePost, replyTo?: IPostID, replyDate?: string): Promise<void> => {
+const addCachePost = async (uid: number, post: ICorePost, replyTo?: IPostID, replyDate?: string): Promise<void> => {
     // Get a list of OP's followers
-    const followers = await redis.smembers('user:' + post.uid + ':followers');
-    followers.push(post.uid.toString());
+    const followers = await redis.smembers('user:' + uid + ':followers');
+    followers.push(uid.toString());
 
     const postID = {
         pid: post.pid,
@@ -33,7 +34,7 @@ const addCachePost = async (post: ICorePost, replyTo?: IPostID, replyDate?: stri
     // Add postID to OP's user timeline
     const userTimeline = await redis.hget('user:' + post.uid, 'usertimeline');
     if (userTimeline) {
-        tx.zadd('user:' + post.uid + ':usertimeline', new Date(post.date).getTime().toString(), JSON.stringify(postID));
+        tx.zadd('user:' + uid + ':usertimeline', new Date(post.date).getTime().toString(), JSON.stringify(postID));
     }
 
     // Add post to cache
@@ -51,17 +52,18 @@ const addCachePost = async (post: ICorePost, replyTo?: IPostID, replyDate?: stri
 
 /**
  * Deletes a post ID from all timelines and the post it self from redis.
+ * @param uid ID of the user that created/reposted the given post.
  * @param postID The id of a post.
  */
-const deleteCachePost = async (postID: IPostID): Promise<void> => {
-    const followers = await redis.smembers('user:' + postID.uid + ':followers');
-    followers.push(postID.uid.toString());
+const deleteCachePost = async (uid: number, postID: IPostID): Promise<void> => {
+    const followers = await redis.smembers('user:' + uid + ':followers');
+    followers.push(uid.toString());
 
     const tx = redis.multi();
     for (const follower of followers) {
         tx.zrem('user:' + follower + ':hometimeline', JSON.stringify(postID));
     }
-    tx.zrem('user:' + postID.uid + ':usertimeline', JSON.stringify(postID));
+    tx.zrem('user:' + uid + ':usertimeline', JSON.stringify(postID));
     
     if (!postID.repostUsername) tx.hdel('post', postID.pid + ':' + postID.uid);
     
@@ -85,13 +87,13 @@ export = {
 
         await client.query(SQL, [pid, uid, message, date.toISOString()]);
         
-        await addCachePost({ pid, uid, message, date: date.toISOString() });
+        await addCachePost(uid, { pid, uid, message, date: date.toISOString() });
 
         client.release();
     },
     /**
      * Creates a new comment post.
-     * @param uid User ID.
+     * @param uid ID of user who created the comment.
      * @param postID ID of the post being replied to.
      * @param message The comment's message.
      */
@@ -110,7 +112,7 @@ export = {
             await client.query(COMMENT_SQL, [postID.pid, postID.uid, new_pid, uid]);
             await client.query('COMMIT');
             
-            await addCachePost({ pid: new_pid, uid, message, date }, postID, rawDate.getTime().toString());
+            await addCachePost(uid, { pid: new_pid, uid, message, date }, postID, rawDate.getTime().toString());
             await redis.sadd('batch:post', JSON.stringify(postID));
         } catch (err) {
             await client.query('ROLLBACK');
@@ -131,7 +133,7 @@ export = {
         client.release();
         // TODO: check if post is comment
         // TODO: add OP's post to batch processing
-        deleteCachePost(postID);
+        deleteCachePost(postID.uid, postID);
     },
     /**
      * Likes a post and adds it to batch processing.
@@ -188,7 +190,7 @@ export = {
         await redis.sadd('user:' + uid + ':reposts', JSON.stringify(postID));
         await redis.sadd('batch:post', JSON.stringify(postID));
 
-        await addCachePost({ 
+        await addCachePost(uid, { 
             pid: postID.pid, 
             uid: postID.uid, 
             message: "", 
@@ -212,7 +214,7 @@ export = {
 
         const newPostID = postID;
         newPostID.repostUsername = await UserModel.getUsernameFromUID(uid);
-        deleteCachePost(newPostID);
+        deleteCachePost(uid, newPostID);
 
         await redis.sadd('batch:post', JSON.stringify(postID));
     },
