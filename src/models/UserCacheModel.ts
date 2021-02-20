@@ -87,8 +87,8 @@ const fetchPostsFromID = async (postIDs: IPostID[], viewerUID: number): Promise<
     const coldPostIDs = await fetchCorePosts(postIDs, true);
     await fetchCorePosts(coldPostIDs);
 
-    if (corePosts.length == 0) {
-        return Promise.reject(createError(404, "Invalid post ID."));
+    if (corePosts.length === 0 && fullPosts.length > 0) {
+        return Promise.reject(createError(404, "One or more invalid post IDs."));
     }
 
     // Fetch post metadata
