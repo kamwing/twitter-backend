@@ -63,7 +63,7 @@ const getUsernameFromUID = async (uid: number): Promise<string> => {
  * @param postIDs List of post IDs.
  * @param viewerUID ID of the user viewing the postIDs.
  */
-const fetchPostsFromID = async (postIDs: IPostID[], viewerUID: number): Promise<IPost[]> => {
+const fetchPostsFromID = async (postIDs: IPostID[], viewerUID: number, orderDesc?: boolean): Promise<IPost[]> => {
     const fullPosts: IPost[] = [];
     const corePosts: ICorePost[] = [];
 
@@ -100,6 +100,13 @@ const fetchPostsFromID = async (postIDs: IPostID[], viewerUID: number): Promise<
             stats = JSON.parse(rawStats);
         }
 
+        let hasReposted = false;
+        const allUserReposts = await redis.smembers('user:' + viewerUID + ':reposts');
+        for (const rawRepost of allUserReposts) {
+            const repost = JSON.parse(rawRepost) as IPostID;
+            if (repost.pid === corePost.pid && repost.uid === corePost.uid) hasReposted = true;
+        }
+
         fullPosts.push({
             pid: corePost.pid,
             uid: corePost.uid,
@@ -111,17 +118,19 @@ const fetchPostsFromID = async (postIDs: IPostID[], viewerUID: number): Promise<
             reposts: stats.reposts,
             comments: stats.comments,
             hasLiked: Boolean(await redis.zscore('user:' + viewerUID + ':likes', JSON.stringify(postID))),
-            hasReposted: Boolean(await redis.sismember('user:' + viewerUID + ':reposts', JSON.stringify(postID))),
+            hasReposted,
             rawDate: corePost.date,
             repostUsername: corePost.repostUsername
         });
     }
 
-    // // Sorts posts from new to old.
-    // fullPosts.sort((a, b) => {
-    //     if (a.rawDate! > b.rawDate!) return -1;
-    //     return 1;
-    // });
+    // Sorts posts from new to old.
+    if (orderDesc) {
+        fullPosts.sort((a, b) => {
+            if (a.rawDate! > b.rawDate!) return -1;
+            return 1;
+        });
+    }
     return fullPosts;
 }
 
@@ -210,6 +219,20 @@ const getSmallProfileImage = async (uid: number): Promise<string> => {
 }
 
 /**
+ * Removes a user's timelines from cache.
+ * This is used for regenerating a user's timeline when they follow or unfollow another user.
+ * 
+ * @param uid The user wanting their timelines removed from cache.
+ */
+const removeTimelineCache = async (uid: number): Promise<void> => {
+    await redis.hdel("user:" + uid, "usertimeline");
+    await redis.del("user:" + uid + ":usertimeline");
+    await redis.hdel("user:" + uid, "hometimeline");
+    await redis.del("user:" + uid + ":hometimeline");
+}
+
+
+/**
  * Get a user timeline's post IDs.
  * Assumes that the user of the profile has already had a cache check.
  * Generates a new user timeline if theres not one already in the cache.
@@ -221,12 +244,21 @@ const getUserTimeline = async (uid: number, viewerUID: number, lastDate?: Date):
     const hasUserTimeline = await redis.hget('user:' + uid, 'usertimeline');
     if (!hasUserTimeline) { // Need to generate user timeline
         const posts = await UserModel.getAllPostIDs(uid);
-        
+        const reposts = await UserModel.getReposts(uid);
+        const username = await getUsernameFromUID(uid);
+
         const tx = redis.multi();
         posts.forEach((post) => {
             tx.zadd('user:' + uid + ':usertimeline', new Date(post.date).getTime().toString(), JSON.stringify({
                 pid: post.pid,
                 uid
+            }));
+        });
+        reposts.forEach((repost) => {
+            tx.zadd('user:' + uid + ':usertimeline', new Date(repost.date!).getTime().toString(), JSON.stringify({
+                pid: repost.pid,
+                uid: repost.uid,
+                repostUsername: username
             }));
         });
         tx.hset('user:' + uid, 'usertimeline', 1);
@@ -271,12 +303,21 @@ const getHomeTimeline = async (uid: number, lastDate?: Date): Promise<IPost[]> =
     const hasUserTimeline = await redis.hget('user:' + uid, 'hometimeline');
     if (!hasUserTimeline) { // Need to generate user timeline
         const posts = await UserModel.getHomeTimelinePostIDs(uid);
+        const reposts = await UserModel.getReposts(uid);
+        const username = await getUsernameFromUID(uid);
         
         const tx = redis.multi();
         posts.forEach((post) => {
-            tx.zadd('user:' + uid + ':hometimeline', new Date(post.date).getTime().toString(), JSON.stringify({
+            tx.zadd('user:' + uid + ':hometimeline', new Date(post.date!).getTime().toString(), JSON.stringify({
                 pid: post.pid,
                 uid: post.uid
+            }));
+        });
+        reposts.forEach((repost) => {
+            tx.zadd('user:' + uid + ':hometimeline', new Date(repost.date!).getTime().toString(), JSON.stringify({
+                pid: repost.pid,
+                uid: repost.uid,
+                repostUsername: username
             }));
         });
         tx.hset('user:' + uid, 'hometimeline', 1);
@@ -338,10 +379,10 @@ const getSearchTimeline = async (keywords: string, viewerUID: number, lastDate?:
     if (postIDs.length == 0) return [];
 
     try {
-        return fetchPostsFromID(postIDs, viewerUID);
+        return fetchPostsFromID(postIDs, viewerUID, true);
     } catch (err) {
         return Promise.reject(err);
     }
 }
 
-export = { cacheCheck, getSmallProfileImage, refreshProfileCache, getProfile, getUserTimeline, getLikeTimeline, getHomeTimeline, getCommentTimeline, getSearchTimeline, getUIDFromUsername };
+export = { removeTimelineCache, cacheCheck, getSmallProfileImage, refreshProfileCache, getProfile, getUserTimeline, getLikeTimeline, getHomeTimeline, getCommentTimeline, getSearchTimeline, getUIDFromUsername };

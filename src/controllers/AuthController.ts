@@ -59,14 +59,14 @@ export = {
         if (!emailAvailable) {
             return next(createError(409, 'Email already registered'));
         }
-        const usernameAvailable = await AuthModel.isUsernameAvailable(req.body.username);
+        const usernameAvailable = await AuthModel.isUsernameAvailable((req.body.username as string).trim());
         if (!usernameAvailable) {
             return next(createError(409, 'Username already taken'));
         }
 
         const hash = await bcrypt.hash(req.body.password, 10);
 
-        await AuthModel.register(req.body.email, req.body.username, hash, defaultProfileURL, defaultSmallProfileURL, defaultBackgroundURL, defaultBio);
+        await AuthModel.register((req.body.email as string).trim(), (req.body.username as string).trim(), hash, defaultProfileURL, defaultSmallProfileURL, defaultBackgroundURL, defaultBio);
 
         res.sendStatus(200);
     }

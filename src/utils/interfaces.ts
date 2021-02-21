@@ -24,6 +24,7 @@ export interface IPost {
 export interface IPostID {
     pid: number;
     uid: number;
+    date?: string;
     repostUsername?: string;
 }
 

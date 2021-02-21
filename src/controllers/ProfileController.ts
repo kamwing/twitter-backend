@@ -89,9 +89,8 @@ export = {
 
         try {
             const uid = await UserCache.getUIDFromUsername(req.query.username as string);
-            await UserCache.cacheCheck(uid);
             await UserModel.follow(req.user!.uid, uid);
-
+            await UserCache.removeTimelineCache(req.user!.uid);
             res.sendStatus(200);
         } catch (err) {
             next(err);
@@ -110,6 +109,7 @@ export = {
             const uid = await UserCache.getUIDFromUsername(req.query.username as string);
             await UserCache.cacheCheck(uid);
             await UserModel.unfollow(req.user!.uid, uid);
+            await UserCache.removeTimelineCache(req.user!.uid);
 
             res.sendStatus(200);
         } catch (err) {

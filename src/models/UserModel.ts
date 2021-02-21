@@ -20,6 +20,7 @@ export = {
         const SQL = 'SELECT uid FROM public.user WHERE username_lower = LOWER($1);';
 
         const { rows } = await client.query(SQL, [username]);
+        client.release();
 
         if (rows.length == 0) {
             return Promise.reject(createError(404, 'Invalid username'));
@@ -36,6 +37,7 @@ export = {
         const SQL = 'SELECT username FROM public.user WHERE uid = $1;';
 
         const { rows } = await client.query(SQL, [uid]);
+        client.release();
 
         if (rows.length == 0) {
             return Promise.reject(createError(404, "Invalid user ID."));
@@ -120,8 +122,15 @@ export = {
         const SQL = 'SELECT uid FROM public.user_following WHERE fid = $1;';
 
         const { rows } = await client.query(SQL, [uid]);
+        client.release();
 
-        return rows;
+        const result: number[] = [];
+
+        for (const row of rows) {
+            result.push(row.uid);
+        }
+
+        return result;
     },
     /**
      * Updates a user's following list.
@@ -137,6 +146,7 @@ export = {
         redis.sadd('user:' + fid + ':followers', uid);
 
         redis.sadd('batch:user', fid);
+        client.release();
     },
     /**
      * Updates a user's following list.
@@ -152,6 +162,8 @@ export = {
         redis.srem('user:' + fid + ':followers', uid);
 
         redis.sadd('batch:user', fid);
+
+        client.release();
     },
     /**
      * Get all the core data of every post from a user.
@@ -162,6 +174,7 @@ export = {
         const SQL = 'SELECT pid, uid, message, date FROM public.post WHERE uid = $1;';
 
         const { rows } = await client.query(SQL, [uid]);
+        client.release();
 
         return rows;
     },
@@ -174,6 +187,7 @@ export = {
         const SQL = 'SELECT pid, date FROM public.post WHERE uid = $1;';
 
         const { rows } = await client.query(SQL, [uid]);
+        client.release();
 
         return rows;
     },
@@ -186,6 +200,7 @@ export = {
         const SQL = 'SELECT post_pid as pid, post_uid as uid, date FROM public.user_like WHERE public.user_like.uid = $1;';
 
         const { rows } = await client.query(SQL, [uid]);
+        client.release();
 
         return rows;
     },
@@ -195,10 +210,11 @@ export = {
      */
     getReposts: async (uid: number): Promise<IPostID[]> => {
         const client = await pool.connect();
-        const SQL = 'SELECT post_pid as pid, post_uid as uid FROM public.user_repost WHERE public.user_repost.uid = $1;';
+        const SQL = 'SELECT post_pid as pid, post_uid as uid, date FROM public.user_repost WHERE public.user_repost.uid = $1;';
 
         const { rows } = await client.query(SQL, [uid]);
-
+        client.release();
+        
         return rows;
     },
     /**
@@ -218,14 +234,33 @@ export = {
      * Get all the post IDs of a users home timeline.
      * @param uid User ID.
      */
-    getHomeTimelinePostIDs: async (uid: number): Promise<IPostIDDate[]> => {
+    getHomeTimelinePostIDs: async (uid: number): Promise<IPostID[]> => {
         const client = await pool.connect();
-        const SQL = 'SELECT public.post.pid as pid, public.post.uid as uid, date FROM public.post INNER JOIN public.user_following ON (public.user_following.fid = public.post.uid AND public.user_following.uid = $1) OR public.post.uid = $1;';
-
-        const { rows } = await client.query(SQL, [uid]);
-        client.release();
+        const FOLLOW_SQL = 'SELECT public.post.pid as pid, public.post.uid as uid, date FROM public.post INNER JOIN public.user_following ON public.user_following.fid = public.post.uid AND public.user_following.uid = $1;';
+        const MY_SQL = 'SELECT public.post.pid as pid, public.post.uid as uid, date FROM public.post WHERE public.post.uid = $1;';
         
-        return rows;
+        const results: IPostID[] = [];
+        const myRows = (await client.query(MY_SQL, [uid])).rows;
+        const followRows = (await client.query(FOLLOW_SQL, [uid])).rows;
+
+        for (const row of myRows) {
+            results.push({
+                pid: row.pid,
+                uid: row.uid,
+                date: row.date
+            });
+        }
+
+        for (const row of followRows) {
+            results.push({
+                pid: row.pid,
+                uid: row.uid,
+                date: row.date
+            });
+        }
+
+        client.release();
+        return results;
     },
     /**
      * Get all comment post IDs for every post, created by a user.
@@ -236,7 +271,8 @@ export = {
         const SQL = 'SELECT op_pid, op_uid, comment_pid, comment_uid, p2.date as date FROM public.post_comment JOIN public.post AS p1 ON p1.pid = public.post_comment.op_pid AND p1.uid = public.post_comment.op_uid JOIN public.post AS p2 ON p2.pid = comment_pid AND p2.uid = comment_uid WHERE p1.uid = $1;';
 
         const { rows } = await client.query(SQL, [uid]);
-
+        client.release();
+        
         const res: IPostCommentID[] = [];
         rows.forEach((row) => res.push({
             op: { pid: Number(row.op_pid), uid: Number(row.op_uid) },
@@ -255,7 +291,7 @@ export = {
         const SQL = 'SELECT count(uid) as followers FROM public.user_following WHERE fid = $1;';
 
         const { rows } = await client.query(SQL, [uid]);
-
+        client.release();
         return rows[0].followers;
     }
 }

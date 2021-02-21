@@ -12,6 +12,6 @@ router.post('/login', check('email').isEmail().withMessage('Invalid email addres
 /**
  * Links a request for creating a new account.
  */
-router.post('/register', check('email').isEmail().withMessage('Invalid email address'), check('username').isAlphanumeric().withMessage('Invalid username'), check('password').isLength({ min: 6 }).withMessage('Invalid password'), AuthController.register);
+router.post('/register', check('email').isEmail().withMessage('Invalid email address'), check('username').isString().withMessage('Invalid username'), check('password').isLength({ min: 6 }).withMessage('Invalid password'), AuthController.register);
 
 export default router;

@@ -210,7 +210,13 @@ export = {
         await client.query(SQL, [uid, postID.pid, postID.uid]);
         client.release();
 
-        await redis.srem('user:' + uid + ':reposts', JSON.stringify(postID));
+        const allUserReposts = await redis.smembers('user:' + uid + ':reposts');
+        for (const rawRepost of allUserReposts) {
+            const repost = JSON.parse(rawRepost) as IPostID;
+            if (repost.pid === postID.pid && repost.uid === postID.uid) {
+                await redis.srem('user:' + uid + ':reposts', rawRepost);
+            }
+        }
 
         const newPostID = postID;
         newPostID.repostUsername = await UserModel.getUsernameFromUID(uid);
@@ -248,10 +254,11 @@ export = {
      */
     searchLatest: async (keywords: string, lastDate: string): Promise<IPostID[]> => {
         const client = await pool.connect();
-        const SQL = 'SELECT pid, uid FROM public.post WHERE to_tsvector(message) @@ plainto_tsquery(\'english\', $1) AND date < $2 LIMIT 10;';
+        const SQL = 'SELECT pid, uid FROM public.post WHERE to_tsvector(message) @@ plainto_tsquery(\'english\', $1) AND date < $2 ORDER BY date DESC LIMIT 10;';
 
         const { rows } = await client.query(SQL, [keywords, lastDate]);
-
+        client.release();
+        
         return rows;
     }
 }
