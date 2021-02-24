@@ -90,7 +90,7 @@ Gets all the contents of a post and a few comments.
 }
 ```
 
-### GET /api/post/create
+### POST /api/post/create
 Creates a new post on the user's profile.
 
 **Parameters**
@@ -98,7 +98,7 @@ Creates a new post on the user's profile.
 |------------|----------|--------|--------------------------------|
 | `message`  | required | string | A non-empty message. |
 
-### GET /api/post/create/comment
+### POST /api/post/create/comment
 Creates a new comment in reply to someones post.
 
 **Parameters**
@@ -108,7 +108,7 @@ Creates a new comment in reply to someones post.
 | `pid` | required | number | The ID of the post being replied to. |
 | `uid` | required | number | The ID of the user being replied to. |
 
-### GET /api/post/like
+### POST /api/post/like
 Likes a post, and adds it to the liker's like timeline.
 
 **Parameters**
@@ -117,7 +117,7 @@ Likes a post, and adds it to the liker's like timeline.
 | `pid` | required | number | The ID of the post being liked. |
 | `uid` | required | number | The ID of the user being liked. |
 
-### GET /api/post/unlike
+### DELETE /api/post/like
 Unlikes a post, and removes it from the liker's like timeline.
 
 **Parameters**
@@ -126,7 +126,7 @@ Unlikes a post, and removes it from the liker's like timeline.
 | `pid` | required | number | The ID of the post being unliked. |
 | `uid` | required | number | The ID of the user being unliked. |
 
-### GET /api/post/repost
+### POST /api/post/repost
 Reposts a post, and adds it to the reposter's profile timeline and all follower home timelines.
 
 **Parameters**
@@ -135,7 +135,7 @@ Reposts a post, and adds it to the reposter's profile timeline and all follower 
 | `pid` | required | number | The ID of the post being liked. |
 | `uid` | required | number | The ID of the user being liked. |
 
-### GET /api/post/unrepost
+### DELETE /api/post/repost
 Unreposts a post, and removes it from the reposter's profile timeline and all follower home timelines.
 
 **Parameters**
@@ -222,7 +222,7 @@ Gets a user's like timeline, and checks if the viewing user has liked/reposted a
 ]
 ```
 
-### GET /api/profile/follow
+### POST /api/profile/follow
 Adds you to the given user's follower list.
 
 **Parameters**
@@ -230,7 +230,7 @@ Adds you to the given user's follower list.
 |-----------|----------|--------|--------------------------------|
 | `username` | required | string | Username of the profile being followed. |
 
-### GET /api/profile/unfollow
+### DELETE /api/profile/follow
 Removes you from the given user's follower list.
 
 **Parameters**
@@ -238,7 +238,7 @@ Removes you from the given user's follower list.
 |-----------|----------|--------|--------------------------------|
 | `username` | required | string | Username of the profile being unfollowed. |
 
-### GET /api/profile/update
+### POST /api/profile
 Update your profile's description, images or change your username. If a new username is given and is unique, it will respond with a new username cookie.
 
 **Parameters**

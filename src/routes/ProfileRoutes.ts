@@ -50,11 +50,11 @@ router.get('/likes', check('username').notEmpty().withMessage('Invalid username'
 /**
  * Links a request for a user to follow another user.
  */
-router.get('/follow', check('username').notEmpty().withMessage('Invalid username'), ProfileController.follow);
+router.post('/follow', check('username').notEmpty().withMessage('Invalid username'), ProfileController.follow);
 
 /**
  * Links a request for a user to unfollow another user.
  */
-router.get('/unfollow', check('username').notEmpty().withMessage('Invalid username'), ProfileController.unfollow);
+router.delete('/follow', check('username').notEmpty().withMessage('Invalid username'), ProfileController.unfollow);
 
 export default router;
