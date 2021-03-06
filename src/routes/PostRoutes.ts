@@ -7,12 +7,12 @@ const router = Router();
 /**
  * Links a request for creating a post.
  */
-router.post('/create', check('message').notEmpty().withMessage('Invalid message'), PostController.createPost);
+router.post('/', check('message').notEmpty().withMessage('Invalid message'), PostController.createPost);
 
 /**
  * Links a request for creating a comment on a post.
  */
-router.post('/create/comment', check('message').notEmpty().withMessage('Invalid message'),  check(['pid', 'uid']).exists().isNumeric().withMessage('Invalid post ID'), PostController.createCommentPost);
+router.post('/comment', check('message').notEmpty().withMessage('Invalid message'),  check(['pid', 'uid']).exists().isNumeric().withMessage('Invalid post ID'), PostController.createCommentPost);
 
 /**
  * Links a request for liking a post.
