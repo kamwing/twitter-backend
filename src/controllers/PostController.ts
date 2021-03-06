@@ -15,7 +15,7 @@ export = {
             return next(createError(400, errors.array()[0].msg));
         }
 
-        await PostModel.createPost(req.user!.uid, String(req.query.message));
+        await PostModel.createPost(req.user!.uid, String(req.body.message));
         res.sendStatus(200);
         
     },
@@ -30,11 +30,11 @@ export = {
 
         try {
             const postID = {
-                pid: Number(req.query.pid!),
-                uid: Number(req.query.uid!),
+                pid: Number(req.body.pid!),
+                uid: Number(req.body.uid!),
             };
-    
-            await PostModel.createComment(req.user!.uid, postID, String(req.query.message));
+
+            await PostModel.createComment(req.user!.uid, postID, String(req.body.message));
             res.sendStatus(200);
         } catch (err) {
             next(err);
@@ -51,8 +51,8 @@ export = {
 
         try {
             const postID = {
-                pid: Number(req.query.pid!),
-                uid: Number(req.query.uid!),
+                pid: Number(req.body.pid!),
+                uid: Number(req.body.uid!),
             };
             
             await PostModel.likePost(req.user!.uid, postID);
@@ -72,8 +72,8 @@ export = {
 
         try {
             const postID = {
-                pid: Number(req.query.pid!),
-                uid: Number(req.query.uid!),
+                pid: Number(req.body.pid!),
+                uid: Number(req.body.uid!),
             };
             
             await PostModel.unlikePost(req.user!.uid, postID);
@@ -93,8 +93,8 @@ export = {
 
         try {
             const postID = {
-                pid: Number(req.query.pid!),
-                uid: Number(req.query.uid!),
+                pid: Number(req.body.pid!),
+                uid: Number(req.body.uid!),
             };
             
             await PostModel.repost(req.user!.uid, postID);
@@ -114,8 +114,8 @@ export = {
 
         try {
             const postID = {
-                pid: Number(req.query.pid!),
-                uid: Number(req.query.uid!),
+                pid: Number(req.body.pid!),
+                uid: Number(req.body.uid!),
             };
             
             await PostModel.unrepost(req.user!.uid, postID);

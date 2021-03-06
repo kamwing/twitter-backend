@@ -20,7 +20,7 @@ export = {
     login: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            next(createError(400, errors.array()[0].msg));
+            return next(createError(400, errors.array()[0].msg));
         }
 
         try {

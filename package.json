@@ -8,7 +8,7 @@
     "start": "npm run build && node build/index.js",
     "build": "rimraf ./build && tsc",
     "lint": "eslint . --ext .ts",
-    "test": "mocha --exit -r ts-node/register tests/index.ts",
+    "test": "mocha --exit -r ts-node/register test/index.ts",
     "coverage": "nyc -r lcov -e .ts -x \"*.test.ts\" npm run test"
   },
   "repository": {
