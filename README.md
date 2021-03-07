@@ -13,11 +13,11 @@ Since this Twitter clone is read heavy, I have focused on caching timelines, pos
 
 ### Creating a new post
 
-<img src="https://i.imgur.com/XAfdEMf.png" alt="Image of creating a post" height="350px">
+<img src="https://i.imgur.com/LOB4MxG.png" alt="Image of creating a post" height="380px">
 
 ### Liking a post
 
-![Image of liking a post](https://i.imgur.com/vUGsg3G.png)
+![Image of liking a post](https://i.imgur.com/NUzwn2b.png)
 
 ## Endpoints
 
@@ -90,7 +90,7 @@ Gets all the contents of a post and a few comments.
 }
 ```
 
-### POST /api/post/create
+### POST /api/post
 Creates a new post on the user's profile.
 
 **Parameters**
@@ -98,7 +98,7 @@ Creates a new post on the user's profile.
 |------------|----------|--------|--------------------------------|
 | `message`  | required | string | A non-empty message. |
 
-### POST /api/post/create/comment
+### POST /api/post/comment
 Creates a new comment in reply to someones post.
 
 **Parameters**
@@ -182,7 +182,7 @@ Gets a user's post timeline, and checks if the viewing user has liked/reposted a
         "username":"Gabe",
         "profileURL":"https//social.gabe.nz/api/img/1-profile-small.png",
         "date":"Feb 9",
-        "message":"example message\n",
+        "message":"example message",
         "likes":0,
         "reposts":0,
         "comments":0,
@@ -211,7 +211,7 @@ Gets a user's like timeline, and checks if the viewing user has liked/reposted a
         "username":"Gabe",
         "profileURL":"https//social.gabe.nz/api/img/1-profile-small.png",
         "date":"Feb 9",
-        "message":"example message\n",
+        "message":"example message",
         "likes":0,
         "reposts":0,
         "comments":0,
@@ -266,7 +266,7 @@ Gets a user's like timeline, and checks if the viewing user has liked/reposted a
         "username":"Gabe",
         "profileURL":"https//social.gabe.nz/api/img/1-profile-small.png",
         "date":"Feb 9",
-        "message":"example message\n",
+        "message":"example message",
         "likes":0,
         "reposts":0,
         "comments":0,
@@ -295,7 +295,7 @@ Search for posts containing the given keywords, and check if the viewing user ha
         "username":"Gabe",
         "profileURL":"https//social.gabe.nz/api/img/1-profile-small.png",
         "date":"Feb 9",
-        "message":"one of many posts containing the keywords\n",
+        "message":"one of many posts containing the keywords",
         "likes":0,
         "reposts":0,
         "comments":0,
