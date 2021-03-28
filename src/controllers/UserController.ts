@@ -12,13 +12,14 @@ export = {
      * Handles core profile data requests. (Profile image, background image, username and description)
      */
     getProfile: async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+        const { username } = req.params;
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return next(createError(400, errors.array()[0].msg));
         }
         
         try {
-            const uid = await UserCache.getUIDFromUsername(req.query.username as string);
+            const uid = await UserCache.getUIDFromUsername(username as string);
             await UserCache.cacheCheck(uid);
             const profile = await UserCache.getProfile(uid, req.user!.uid);
         
@@ -31,15 +32,18 @@ export = {
      * Handles requests for user profile images.
      */
     getNavProfileImage: async (req: AuthRequest, res: Response): Promise<void> => {
-        await UserCache.cacheCheck(req.user!.uid);
+        const { username } = req.params;
+        const uid = await UserCache.getUIDFromUsername(username as string);
+        await UserCache.cacheCheck(uid);
         res.send({
-            smallProfileURL: await UserCache.getSmallProfileImage(req.user!.uid)
+            smallProfileURL: await UserCache.getSmallProfileImage(uid)
         });
     },
     /**
      * Handles requests for user timelines.
      */
     getPosts: async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+        const { username } = req.params;
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return next(createError(400, errors.array()[0].msg));
@@ -48,7 +52,7 @@ export = {
         try {
             const lastDate = req.query.lastDate ? new Date(req.query.lastDate as string) : undefined;
 
-            const uid = await UserCache.getUIDFromUsername(req.query.username as string);
+            const uid = await UserCache.getUIDFromUsername(username as string);
             await UserCache.cacheCheck(uid);
             const posts = await UserCache.getUserTimeline(uid, req.user!.uid, lastDate);
             
@@ -61,6 +65,7 @@ export = {
      * Handles requests for like timelines.
      */
     getLikedPosts: async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+        const { username } = req.params;
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return next(createError(400, errors.array()[0].msg));
@@ -69,7 +74,7 @@ export = {
         try {
             const lastDate = req.query.lastDate ? new Date(req.query.lastDate as string) : undefined;
 
-            const uid = await UserCache.getUIDFromUsername(req.query.username as string);
+            const uid = await UserCache.getUIDFromUsername(username as string);
             await UserCache.cacheCheck(uid);
             const posts = await UserCache.getLikeTimeline(uid, req.user!.uid, lastDate);
             
@@ -82,13 +87,14 @@ export = {
      * Handles requests for following another user.
      */
     follow: async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+        const { username } = req.params;
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return next(createError(400, errors.array()[0].msg));
         }
 
         try {
-            const uid = await UserCache.getUIDFromUsername(req.body.username as string);
+            const uid = await UserCache.getUIDFromUsername(username as string);
             await UserModel.follow(req.user!.uid, uid);
             await UserCache.removeTimelineCache(req.user!.uid);
             res.sendStatus(200);
@@ -100,13 +106,14 @@ export = {
      * Handles requests for unfollowing another user.
      */
     unfollow: async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+        const { username } = req.params;
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return next(createError(400, errors.array()[0].msg));
         }
         
         try {
-            const uid = await UserCache.getUIDFromUsername(req.body.username as string);
+            const uid = await UserCache.getUIDFromUsername(username as string);
             await UserCache.cacheCheck(uid);
             await UserModel.unfollow(req.user!.uid, uid);
             await UserCache.removeTimelineCache(req.user!.uid);

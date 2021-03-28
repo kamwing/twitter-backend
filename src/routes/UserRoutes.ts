@@ -1,6 +1,5 @@
 import { Router, Request } from 'express';
-import { check } from 'express-validator';
-import ProfileController from '../controllers/ProfileController';
+import UserController from '../controllers/UserController';
 import path from 'path';
 import multer from 'multer';
 
@@ -22,39 +21,39 @@ const router = Router();
 /**
  * links a request for getting a user's profile
  */
-router.get('/', check('username').notEmpty().withMessage('Invalid username'), ProfileController.getProfile);
+router.get('/:username', UserController.getProfile);
 
 /**
  * Links a request for updating a user's profile.
  */
-router.post('/update', upload.fields([
+router.post('/:username', upload.fields([
     { name: 'background', maxCount: 1},
     { name: 'profile', maxCount: 1 }
-]), ProfileController.update);
+]), UserController.update);
 
 /**
  * Links a request for a small version of a user's profile image. 
  */
-router.get("/small", ProfileController.getNavProfileImage);
+router.get("/:username/small", UserController.getNavProfileImage);
 
 /**
  * Links a request for a user's posts.
  */
-router.get('/posts', check('username').notEmpty().withMessage('Invalid username'), ProfileController.getPosts);
+router.get('/:username/posts', UserController.getPosts);
 
 /**
  * Links a request for a user's liked posts.
  */
-router.get('/likes', check('username').notEmpty().withMessage('Invalid username'), ProfileController.getLikedPosts);
+router.get('/:username/likes', UserController.getLikedPosts);
 
 /**
  * Links a request for a user to follow another user.
  */
-router.post('/follow', check('username').notEmpty().withMessage('Invalid username'), ProfileController.follow);
+router.post('/:username/follow', UserController.follow);
 
 /**
  * Links a request for a user to unfollow another user.
  */
-router.delete('/follow', check('username').notEmpty().withMessage('Invalid username'), ProfileController.unfollow);
+router.delete('/:username/follow', UserController.unfollow);
 
 export default router;

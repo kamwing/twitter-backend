@@ -43,14 +43,12 @@ Sends details for a new account, checks if the email and username are available 
 | `username` | required | string | A unique alphanumeric username. |
 | `password` | required | string | A password that is at least six characters long. |
 
-### GET /api/post
+### GET /api/post/:pid/:username
 Gets all the contents of a post and a few comments.
 
 **Parameters**
 | Name       | Required | Type   | Description                    |
 |------------|----------|--------|--------------------------------|
-| `pid`  | required | string | The ID of a post from the given username's profile. |
-| `username`  | required | string | Username of an exisiting user. |
 | `lastDate`  | optional | ISO 8601 date with a time zone designator | Every comment returned will be posted during or after this date. |
 
 **Response**
@@ -98,59 +96,39 @@ Creates a new post on the user's profile.
 |------------|----------|--------|--------------------------------|
 | `message`  | required | string | A non-empty message. |
 
-### POST /api/post/comment
+### POST /api/post/:pid/:uid/comment
 Creates a new comment in reply to someones post.
 
 **Parameters**
 | Name      | Required | Type   | Description                    |
 |-----------|----------|--------|--------------------------------|
 | `message` | required | string | A non-empty message. |
-| `pid` | required | number | The ID of the post being replied to. |
-| `uid` | required | number | The ID of the user being replied to. |
 
-### POST /api/post/like
+### POST /api/post/:pid/:uid/like
 Likes a post, and adds it to the liker's like timeline.
 
-**Parameters**
-| Name      | Required | Type   | Description                    |
-|-----------|----------|--------|--------------------------------|
-| `pid` | required | number | The ID of the post being liked. |
-| `uid` | required | number | The ID of the user being liked. |
-
-### DELETE /api/post/like
+### DELETE /api/post/:pid/:uid/like
 Unlikes a post, and removes it from the liker's like timeline.
 
-**Parameters**
-| Name      | Required | Type   | Description                    |
-|-----------|----------|--------|--------------------------------|
-| `pid` | required | number | The ID of the post being unliked. |
-| `uid` | required | number | The ID of the user being unliked. |
-
-### POST /api/post/repost
+### POST /api/post/:pid/:uid/repost
 Reposts a post, and adds it to the reposter's profile timeline and all follower home timelines.
 
-**Parameters**
-| Name      | Required | Type   | Description                    |
-|-----------|----------|--------|--------------------------------|
-| `pid` | required | number | The ID of the post being liked. |
-| `uid` | required | number | The ID of the user being liked. |
-
-### DELETE /api/post/repost
+### DELETE /api/post/:pid/:uid/repost
 Unreposts a post, and removes it from the reposter's profile timeline and all follower home timelines.
 
-**Parameters**
-| Name      | Required | Type   | Description                    |
-|-----------|----------|--------|--------------------------------|
-| `pid` | required | number | The ID of the post being unliked. |
-| `uid` | required | number | The ID of the user being unliked. |
-
-### GET /api/profile
+### GET /api/user/:username
 Gets a user's profile description, images and follower count.
 
+### POST /api/user/:username
+Update your profile's description, images or change your username. If a new username is given and is unique, it will respond with a new username cookie.
+
 **Parameters**
 | Name      | Required | Type   | Description                    |
 |-----------|----------|--------|--------------------------------|
-| `username` | required | string | Username of the profile being requested. |
+| `username` | optional | string | A new unique username. |
+| `description` | optional | string | A new description. |
+| `profile` | optional | image | A new profile image. |
+| `background` | optional | image | A new profile background image. |
 
 **Response**
 ```
@@ -164,13 +142,12 @@ Gets a user's profile description, images and follower count.
 }
 ```
 
-### GET /api/profile/posts
+### GET /api/user/:username/posts
 Gets a user's post timeline, and checks if the viewing user has liked/reposted any of the posts.
 
 **Parameters**
 | Name      | Required | Type   | Description                    |
 |-----------|----------|--------|--------------------------------|
-| `username` | required | string | Username of the timeline being requested. |
 | `lastDate`  | optional | ISO 8601 date with a time zone designator | Every post returned will be posted during or after this date. |
 
 **Response**
@@ -193,13 +170,12 @@ Gets a user's post timeline, and checks if the viewing user has liked/reposted a
 ]
 ```
 
-### GET /api/profile/likes
+### GET /api/user/:username/likes
 Gets a user's like timeline, and checks if the viewing user has liked/reposted any of the posts.
 
 **Parameters**
 | Name      | Required | Type   | Description                    |
 |-----------|----------|--------|--------------------------------|
-| `username` | required | string | Username of the timeline being requested. |
 | `lastDate`  | optional | ISO 8601 date with a time zone designator | Every post returned will be liked during or after this date. |
 
 **Response**
@@ -222,35 +198,14 @@ Gets a user's like timeline, and checks if the viewing user has liked/reposted a
 ]
 ```
 
-### POST /api/profile/follow
+### POST /api/user/:username/follow
 Adds you to the given user's follower list.
 
-**Parameters**
-| Name      | Required | Type   | Description                    |
-|-----------|----------|--------|--------------------------------|
-| `username` | required | string | Username of the profile being followed. |
-
-### DELETE /api/profile/follow
+### DELETE /api/user/:username/follow
 Removes you from the given user's follower list.
 
-**Parameters**
-| Name      | Required | Type   | Description                    |
-|-----------|----------|--------|--------------------------------|
-| `username` | required | string | Username of the profile being unfollowed. |
-
-### POST /api/profile
-Update your profile's description, images or change your username. If a new username is given and is unique, it will respond with a new username cookie.
-
-**Parameters**
-| Name      | Required | Type   | Description                    |
-|-----------|----------|--------|--------------------------------|
-| `username` | optional | string | A new unique username. |
-| `description` | optional | string | A new description. |
-| `profile` | optional | image | A new profile image. |
-| `background` | optional | image | A new profile background image. |
-
 ### GET /api/timeline
-Gets a user's like timeline, and checks if the viewing user has liked/reposted any of the posts.
+Get a user's home timeline, and checks if the user has liked/reposted any of the retrieved posts.
 
 **Parameters**
 | Name      | Required | Type   | Description                    |
@@ -278,7 +233,7 @@ Gets a user's like timeline, and checks if the viewing user has liked/reposted a
 ```
 
 ### GET /api/search
-Search for posts containing the given keywords, and check if the viewing user has liked/reposted any of the returned posts.
+Search for posts containing the given keywords, and checks if the user has liked/reposted any of the retrieved posts.
 
 **Parameters**
 | Name      | Required | Type   | Description                    |

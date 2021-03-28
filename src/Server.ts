@@ -7,7 +7,7 @@ import Batch from './utils/Batch';
 import errorHandler from './middleware/errorHandler';
 
 import AuthRoutes from './routes/AuthRoutes';
-import ProfileRoutes from './routes/ProfileRoutes';
+import UserRoutes from './routes/UserRoutes';
 import PostRoutes from './routes/PostRoutes';
 import TimelineRoutes from './routes/TimelineRoutes';
 import SearchRoutes from './routes/SearchRoutes';
@@ -82,7 +82,7 @@ export default class Server {
             maxAge: maxImageCacheAge
         }));
         this.app.use('/api/auth', AuthRoutes);
-        this.app.use('/api/profile', authCheck, ProfileRoutes);
+        this.app.use('/api/user', authCheck, UserRoutes);
         this.app.use('/api/post', authCheck, PostRoutes);
         this.app.use('/api/timeline', authCheck, TimelineRoutes);
         this.app.use('/api/search', authCheck, SearchRoutes);
